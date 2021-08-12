@@ -1,0 +1,145 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+  <script src="components/loader.js"></script>
+  <script src="lib/onsenui/js/onsenui.min.js"></script>
+  
+  <link rel="stylesheet" href="components/loader.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script>
+    //-------------------------------------
+
+    var temp1 = [];
+    var humi1 = [];
+    var createDate1 = [];
+
+    var ncmb = new NCMB("74f700395f049a582d4f47f1ec769c75a717a103b1e415a14a8b773f7c134981","8537b87a224152663e759894422916003178e14c1ec91c3fa844dc226be5b515");
+
+    var NcmbClass = ncmb.DataStore("TempViewerData");
+
+    function update(){
+       temp1 = [];
+       humi1 = [];
+       createDate = []; 
+
+      NcmbClass.order("score",true)
+         .fetchAll()
+         .then(function(results){
+            console.log("Successfully retrieved " + results.length + " scores.");
+            for (var i = 0; i < results.length; i++) {
+              var object = results[i];
+              //console.log(object.temp + ":" + object.humi + ":" + object.createDate);
+              temp1.push(object.temp);
+              humi1.push(object.humi);
+              var date = new Date(object.createDate);
+              createDate1.push(getStringFromDate(date));
+            }
+          })
+         .then(function(){
+            var chart = new Highcharts.Chart({
+            chart: {
+                renderTo: 'container', //表示するid名
+                defaultSeriesType: 'line', //グラフのタイプline, spline, area, areaspline, column, bar, pie,scatter
+                margin:[50,50,100,50]
+            },
+            title: {
+                text: '気温と湿度', //グラフタイトル
+                //style: {margin: '10px 100px 0 0' } // 余白
+            },
+            xAxis: {
+                categories: createDate1
+            },
+            yAxis: [
+            { // 1つ目のy軸設定
+                title: {text: '気温 (°C)'},
+                
+                plotLines: [{ //ラインのスタイル
+                    value: 0, 
+                    width: 1,
+                    color: '#808080'
+                }],
+            },
+            { // 2つ目のy軸設定
+                title: {text: '湿度(%)'},
+                plotLines: [{ //ラインのスタイル
+                    value: 0, 
+                    width: 1,
+                    color: '#ff0000'
+                }],
+                opposite: true // trueの場合グラフの右側にy軸を配置する
+            }
+        ],
+            tooltip: { //ツールチップ
+                formatter: function() {
+                    return ''+ this.series.name +''+
+                        this.x +': '+ this.y +'°C'; }
+            },
+            legend: { //項目名
+                layout: 'vertical',
+                style: {
+                    left: 'auto',
+                    bottom: 'auto',
+                    right: '10px',
+                    top: '100px'
+                }
+            },
+            series: [ //ここからグラフ内容指定
+                { 
+                    name: '気温',
+                    data: temp1,
+                    type: 'line',
+                    yAxis: 0,
+                    color: '#ff0000'
+                }, {
+                    name: '湿度',
+                    data: humi1,
+                    type: 'line',
+                    yAxis: 1,
+                    color: '#00ff00'
+                }
+              ]
+           });
+         })
+         .catch(function(err){
+            console.log(err);
+         });
+    }
+
+
+    //-------------------------------------
+    
+    ons.ready(function() {
+      console.log("Onsen UI is ready!");
+      update();
+    });
+
+    if (ons.platform.isIPhoneX()) {
+      document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
+      document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
+    }
+
+    function getStringFromDate(date) {
+
+      var hour_str = date.getHours();
+      var minute_str = date.getMinutes();
+      
+      format_str = 'hh:mm';
+      format_str = format_str.replace(/hh/g, hour_str);
+      format_str = format_str.replace(/mm/g, minute_str);
+      
+      return format_str;
+    };
+  </script>
+</head>
+<body>
+  <div id="container" style="width:100%; height:85%;"></div>
+
+  <p><ons-button id="push-button" modifier="large" onclick="update()">更新</ons-button></p>
+</body>
+</html>
